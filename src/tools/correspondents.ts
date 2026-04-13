@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { z } from "zod";
 import { PaperlessAPI } from "../api/PaperlessAPI";
-import { MATCHING_ALGORITHM_DESCRIPTION } from "../api/types";
 import {
   enhanceMatchingAlgorithm,
   enhanceMatchingAlgorithmArray,
@@ -62,131 +61,9 @@ export function registerCorrespondentTools(
     })
   );
 
-  server.tool(
-    "create_correspondent",
-    "Create a new correspondent with optional matching pattern and algorithm for automatic document assignment.",
-    {
-      name: z.string(),
-      match: z.string().optional(),
-      matching_algorithm: z
-        .number()
-        .int()
-        .min(0)
-        .max(6)
-        .optional()
-        .describe(MATCHING_ALGORITHM_DESCRIPTION),
-    },
-    withErrorHandling(async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      const response = await api.createCorrespondent(args);
-      const enhancedCorrespondent = enhanceMatchingAlgorithm(response);
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(enhancedCorrespondent) },
-        ],
-      };
-    })
-  );
-
-  server.tool(
-    "update_correspondent",
-    "Update an existing correspondent's name, matching pattern, or matching algorithm.",
-    {
-      id: z.number(),
-      name: z.string(),
-      match: z.string().optional(),
-      matching_algorithm: z
-        .number()
-        .int()
-        .min(0)
-        .max(6)
-        .optional()
-        .describe(MATCHING_ALGORITHM_DESCRIPTION),
-    },
-    withErrorHandling(async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      const { id, ...data } = args;
-      const response = await api.updateCorrespondent(id, data);
-      const enhancedCorrespondent = enhanceMatchingAlgorithm(response);
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(enhancedCorrespondent) },
-        ],
-      };
-    })
-  );
-
-  server.tool(
-    "delete_correspondent",
-    "⚠️ DESTRUCTIVE: Permanently delete a correspondent from the entire system. This will affect ALL documents that use this correspondent.",
-    {
-      id: z.number(),
-      confirm: z
-        .boolean()
-        .describe("Must be true to confirm this destructive operation"),
-    },
-    withErrorHandling(async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      if (!args.confirm) {
-        throw new Error(
-          "Confirmation required for destructive operation. Set confirm: true to proceed."
-        );
-      }
-      await api.deleteCorrespondent(args.id);
-      return {
-        content: [
-          { type: "text", text: JSON.stringify({ status: "deleted" }) },
-        ],
-      };
-    })
-  );
-
-  server.tool(
-    "bulk_edit_correspondents",
-    "Bulk edit correspondents. ⚠️ WARNING: 'delete' operation permanently removes correspondents from the entire system.",
-    {
-      correspondent_ids: z.array(z.number()),
-      operation: z.enum(["set_permissions", "delete"]),
-      confirm: z
-        .boolean()
-        .optional()
-        .describe(
-          "Must be true when operation is 'delete' to confirm destructive operation"
-        ),
-      owner: z.number().optional(),
-      permissions: z
-        .object({
-          view: z.object({
-            users: z.array(z.number()).optional(),
-            groups: z.array(z.number()).optional(),
-          }),
-          change: z.object({
-            users: z.array(z.number()).optional(),
-            groups: z.array(z.number()).optional(),
-          }),
-        })
-        .optional(),
-      merge: z.boolean().optional(),
-    },
-    withErrorHandling(async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      if (args.operation === "delete" && !args.confirm) {
-        throw new Error(
-          "Confirmation required for destructive operation. Set confirm: true to proceed."
-        );
-      }
-      return api.bulkEditObjects(
-        args.correspondent_ids,
-        "correspondents",
-        args.operation,
-        args.operation === "set_permissions"
-          ? {
-              owner: args.owner,
-              permissions: args.permissions,
-              merge: args.merge,
-            }
-          : {}
-      );
-    })
-  );
+  // DISABLED: All write/mutate tools commented out for read-only mode.
+  // server.tool("create_correspondent", ...);
+  // server.tool("update_correspondent", ...);
+  // server.tool("delete_correspondent", ...);
+  // server.tool("bulk_edit_correspondents", ...);
 }

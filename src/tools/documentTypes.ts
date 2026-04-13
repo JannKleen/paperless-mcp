@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
 import { z } from "zod";
 import { PaperlessAPI } from "../api/PaperlessAPI";
-import { MATCHING_ALGORITHM_DESCRIPTION } from "../api/types";
 import {
   enhanceMatchingAlgorithm,
   enhanceMatchingAlgorithmArray,
@@ -62,127 +61,9 @@ export function registerDocumentTypeTools(
     })
   );
 
-  server.tool(
-    "create_document_type",
-    "Create a new document type with optional matching pattern and algorithm for automatic document classification.",
-    {
-      name: z.string(),
-      match: z.string().optional(),
-      matching_algorithm: z
-        .number()
-        .int()
-        .min(0)
-        .max(6)
-        .optional()
-        .describe(MATCHING_ALGORITHM_DESCRIPTION),
-    },
-    withErrorHandling(async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      const response = await api.createDocumentType(args);
-      const enhancedDocumentType = enhanceMatchingAlgorithm(response);
-      return {
-        content: [{ type: "text", text: JSON.stringify(enhancedDocumentType) }],
-      };
-    })
-  );
-
-  server.tool(
-    "update_document_type",
-    "Update an existing document type's name, matching pattern, or matching algorithm.",
-    {
-      id: z.number(),
-      name: z.string(),
-      match: z.string().optional(),
-      matching_algorithm: z
-        .number()
-        .int()
-        .min(0)
-        .max(6)
-        .optional()
-        .describe(MATCHING_ALGORITHM_DESCRIPTION),
-    },
-    withErrorHandling(async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      const { id, ...payloadWithoutId } = args;
-      const response = await api.updateDocumentType(id, payloadWithoutId);
-      const enhancedDocumentType = enhanceMatchingAlgorithm(response);
-      return {
-        content: [{ type: "text", text: JSON.stringify(enhancedDocumentType) }],
-      };
-    })
-  );
-
-  server.tool(
-    "delete_document_type",
-    "⚠️ DESTRUCTIVE: Permanently delete a document type from the entire system. This will affect ALL documents that use this type.",
-    {
-      id: z.number(),
-      confirm: z
-        .boolean()
-        .describe("Must be true to confirm this destructive operation"),
-    },
-    withErrorHandling(async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      if (!args.confirm) {
-        throw new Error(
-          "Confirmation required for destructive operation. Set confirm: true to proceed."
-        );
-      }
-      await api.deleteDocumentType(args.id);
-      return {
-        content: [
-          { type: "text", text: JSON.stringify({ status: "deleted" }) },
-        ],
-      };
-    })
-  );
-
-  server.tool(
-    "bulk_edit_document_types",
-    "Bulk edit document types. ⚠️ WARNING: 'delete' operation permanently removes document types from the entire system.",
-    {
-      document_type_ids: z.array(z.number()),
-      operation: z.enum(["set_permissions", "delete"]),
-      confirm: z
-        .boolean()
-        .optional()
-        .describe(
-          "Must be true when operation is 'delete' to confirm destructive operation"
-        ),
-      owner: z.number().optional(),
-      permissions: z
-        .object({
-          view: z.object({
-            users: z.array(z.number()).optional(),
-            groups: z.array(z.number()).optional(),
-          }),
-          change: z.object({
-            users: z.array(z.number()).optional(),
-            groups: z.array(z.number()).optional(),
-          }),
-        })
-        .optional(),
-      merge: z.boolean().optional(),
-    },
-    withErrorHandling(async (args, extra) => {
-      if (!api) throw new Error("Please configure API connection first");
-      if (args.operation === "delete" && !args.confirm) {
-        throw new Error(
-          "Confirmation required for destructive operation. Set confirm: true to proceed."
-        );
-      }
-      return api.bulkEditObjects(
-        args.document_type_ids,
-        "document_types",
-        args.operation,
-        args.operation === "set_permissions"
-          ? {
-              owner: args.owner,
-              permissions: args.permissions,
-              merge: args.merge,
-            }
-          : {}
-      );
-    })
-  );
+  // DISABLED: All write/mutate tools commented out for read-only mode.
+  // server.tool("create_document_type", ...);
+  // server.tool("update_document_type", ...);
+  // server.tool("delete_document_type", ...);
+  // server.tool("bulk_edit_document_types", ...);
 }
